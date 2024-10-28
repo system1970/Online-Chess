@@ -11,15 +11,21 @@
 <h1>Interactive Chess Game</h1>
 <div id="board" style="width: 400px;"></div>
 <button onclick="startNewGame()">Start New Game</button>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
 <script src="{{ url_for('static', filename='Chess/js/chessboard-1.0.0.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>  <!-- Socket.IO -->
 
 <script>
+    // Check if there's a port; if not, exclude it from the URL
+    const BASE_URL = window.location.port
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+        : `${window.location.protocol}//${window.location.hostname}`;
+
     let board = null;
     const game = new Chess();
-    const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);  // Initialize WebSocket
+    const socket = io.connect(BASE_URL,{ transports: ['websocket', 'polling'] });  // Initialize WebSocket with dynamic URL
 
     // Initialize the chessboard
     function initializeBoard() {
@@ -35,7 +41,7 @@
         const move = game.move({ from: source, to: target, promotion: 'q' });
         if (move === null) return 'snapback';
 
-        fetch('/make_move', {
+        fetch(`${BASE_URL}/make_move`, {  // Use dynamic BASE_URL for the API endpoint
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ move: source + target })
@@ -44,7 +50,7 @@
 
     // Start a new game
     function startNewGame() {
-        fetch('/new_game', { method: 'POST' })
+        fetch(`${BASE_URL}/new_game`, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 game.reset();
@@ -61,6 +67,7 @@
     // Initialize the board on page load
     document.addEventListener('DOMContentLoaded', initializeBoard);
 </script>
+
 
 </body>
 </html>

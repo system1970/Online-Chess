@@ -2,9 +2,10 @@ from flask import Flask, render_template, request, jsonify, g
 from flask_socketio import SocketIO, emit
 import chess
 import sqlite3
+import os
 
 app = Flask(__name__)
-socketio = SocketIO(app)  # Initialize Flask-SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")  # Enable CORS for Socket.IO
 DATABASE = 'games.db'
 
 # Initialize a new chess board
@@ -15,6 +16,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
+        db.execute("CREATE TABLE IF NOT EXISTS games (fen TEXT, moves TEXT)")  # Create table if not exists
     return db
 
 @app.teardown_appcontext
@@ -74,4 +76,5 @@ def handle_connect():
     emit('update_board', {'fen': board.fen()})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use the PORT environment variable
+    socketio.run(app, host='0.0.0.0', port=port)
